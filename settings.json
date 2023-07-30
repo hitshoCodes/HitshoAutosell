@@ -1,1 +1,12 @@
-[”NOTHING HERE RIGHT NOW”]
+{
+  "COOKIE": "YOUR_ROBLOX_COOKIE_HERE",
+  "SELL_METHOD": "UNDERCUT",
+  "CUSTOM_VALUES": {},
+  "SELLVALUE_MULTIPLIER": 1.2,
+  "WHITELIST": [],
+  "BLACKLIST": [],
+  "WEBHOOK": {
+    "ENABLED": false,
+    "URL": ""
+  }
+}
