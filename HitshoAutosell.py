@@ -117,7 +117,7 @@ d88'   88bd88'   `?8b  `?888P' d88'   88b`?8888P'
         
         self.infinite_thread(self.update_status, 1)
         self.infinite_thread(self.set_token, 200)
-        self.infinite_thread(self.fetch_hitsho_collection, 10 * 60)
+        self.infinite_thread(self.fetch_mewt_collection, 10 * 60)
 
         self.logs.append(f"Logged in as {self.client['name']}({self.client['id']})")
         self.logs.append("Fetching inventory, this may take a minute. Please wait.")
@@ -135,34 +135,34 @@ d88'   88bd88'   `?8b  `?888P' d88'   88b`?8888P'
         print()
         print(Style.BRIGHT + f"> Logs: {Fore.WHITE}{Style.BRIGHT}\n" + "\n".join(log for log in self.logs[-10:]) + f"{Fore.WHITE}{Style.BRIGHT}")
 
-    def fetch_hitsho_collection(self):
-        conn = requests.get("https://hitsho.manlambo13.repl.co/collectables")
+    def fetch_mewt_collection(self):
+        conn = requests.get("https://mewt.manlambo13.repl.co/collectables")
         if(conn.status_code == 200):
             data = conn.json()
-            self.hitsho_collection = { item["id"]: item for item in data }
-            self.hitsho_collection_reversed = { item["collectibleItemId"]: item for item in data }
-            self.logs.append("Successfully fetched hitsho collectable database")
+            self.mewt_collection = { item["id"]: item for item in data }
+            self.mewt_collection_reversed = { item["collectibleItemId"]: item for item in data }
+            self.logs.append("Successfully fetched mewt collectable database")
         else:
             time.sleep(5)
-            return self.fetch_hitsho_collection()
+            return self.fetch_mewt_collection()
     
-    def find_hitshodata_by_id(self, id):
-        if len(self.hitsho_collection) <= 0:
+    def find_mewtdata_by_id(self, id):
+        if len(self.mewt_collection) <= 0:
             time.sleep(1)
-            return self.find_hitshodata_by_id(id)
+            return self.find_mewtdata_by_id(id)
         
-        if id in self.hitsho_collection:
-            return self.hitsho_collection[id]
+        if id in self.mewt_collection:
+            return self.mewt_collection[id]
         else:
             return None
         
-    def find_hitshodata_by_collectable_item_id(self, collectibleItemId):
-        if len(self.hitsho_collection_reversed) <= 0:
+    def find_mewtdata_by_collectable_item_id(self, collectibleItemId):
+        if len(self.mewt_collection_reversed) <= 0:
             time.sleep(1)
-            return self.find_hitshodata_by_id(collectibleItemId)
+            return self.find_mewtdata_by_id(collectibleItemId)
         
-        if collectibleItemId in self.hitsho_collection_reversed:
-            return self.hitsho_collection_reversed[collectibleItemId]
+        if collectibleItemId in self.mewt_collection_reversed:
+            return self.mewt_collection_reversed[collectibleItemId]
         else:
             return None
 
@@ -212,14 +212,14 @@ d88'   88bd88'   `?8b  `?888P' d88'   88b`?8888P'
                     if assetType != 'Asset':
                         continue
 
-                    hitsho_data = self.find_hitshodata_by_id(int(assetId))
+                    mewt_data = self.find_mewtdata_by_id(int(assetId))
                     
-                    if not hitsho_data:
+                    if not mewt_data:
                         continue
 
                     self.logs.append(f"{agentName} bought {assetName}, you earned {amount}!")
                     if self.webhook_enabled:
-                        self.webhook.post(agentName, agentId, assetName, assetId, hitsho_data["thumbnail"], amount)
+                        self.webhook.post(agentName, agentId, assetName, assetId, mewt_data["thumbnail"], amount)
             else:
                 time.sleep(5)
                 return self.scan_recent_transactions()
@@ -297,9 +297,9 @@ d88'   88bd88'   `?8b  `?888P' d88'   88b`?8888P'
         collectable_items = []
 
         for item in items:
-            hitsho_data = self.find_hitshodata_by_id(int(item))
-            if hitsho_data:
-                collectable_items.append(hitsho_data["collectibleItemId"])
+            mewt_data = self.find_mewtdata_by_id(int(item))
+            if mewt_data:
+                collectable_items.append(mewt_data["collectibleItemId"])
 
         while len(collectable_items) > 0:
             chunks.append(collectable_items[:120])
@@ -352,13 +352,13 @@ d88'   88bd88'   `?8b  `?888P' d88'   88b`?8888P'
                                 self.resellable_count -= 1
                             else:
                                 price = self.custom_values[id]
-                        elif self.sell_method == "hitshoVALUES":
-                            hitsho_data = self.find_hitshodata_by_collectable_item_id(collectibleItemId)
-                            if hitsho_data["estimatedValue"] <= 0:
-                                self.logs.append(f"Failed to sell {self.collectable_id_to_name[collectibleItemId]} due hitsho value being too low")
+                        elif self.sell_method == "mewtVALUES":
+                            mewt_data = self.find_mewtdata_by_collectable_item_id(collectibleItemId)
+                            if mewt_data["estimatedValue"] <= 0:
+                                self.logs.append(f"Failed to sell {self.collectable_id_to_name[collectibleItemId]} due mewt value being too low")
                                 self.resellable_count -= 1
                             else:
-                                price = hitsho_data["estimatedValue"] * self.hitshovalue_multiplier
+                                price = mewt_data["estimatedValue"] * self.mewtvalue_multiplier
                         elif self.sell_method == "UNDERCUT":
                             if collectibleItemId not in price_cache:
                                 recent_seller = self.fetch_reseller(collectibleItemId)
@@ -387,8 +387,8 @@ d88'   88bd88'   `?8b  `?888P' d88'   88b`?8888P'
         if len(self.whitelist) > 0:
             item_details = self.fetch_item_details_chunks(self.whitelist)
             for item in item_details:
-                hitsho_data = self.find_hitshodata_by_id(item["itemTargetId"])
-                if(hitsho_data and hitsho_data["resellable"] == True):
+                mewt_data = self.find_mewtdata_by_id(item["itemTargetId"])
+                if(mewt_data and mewt_data["resellable"] == True):
                     if not item["itemTargetId"] in self.blacklist:
                         self.collectable_id_to_name[item["collectibleItemId"]] = item["name"]
                         self.id_to_name[item["itemTargetId"]] = item["name"]
@@ -398,8 +398,8 @@ d88'   88bd88'   `?8b  `?888P' d88'   88b`?8888P'
         elif self.sell_method == "CUSTOM":
             item_details = self.fetch_item_details_chunks(list(self.custom_values.keys()))
             for item in item_details:
-                hitsho_data = self.find_hitshodata_by_id(item["itemTargetId"])
-                if(hitsho_data and hitsho_data["resellable"] == True):
+                mewt_data = self.find_mewtdata_by_id(item["itemTargetId"])
+                if(mewt_data and mewt_data["resellable"] == True):
                     if not item["itemTargetId"] in self.blacklist:
                         self.collectable_id_to_name[item["collectibleItemId"]] = item["name"]
                         self.id_to_name[item["itemTargetId"]] = item["name"]
@@ -413,8 +413,8 @@ d88'   88bd88'   `?8b  `?888P' d88'   88b`?8888P'
 
             for raw_item in self.raw_inventory:
                 if not raw_item["assetId"] in self.blacklist:
-                    hitsho_data = self.find_hitshodata_by_id(raw_item["assetId"])
-                    if(hitsho_data and hitsho_data["resellable"] == True):
+                    mewt_data = self.find_mewtdata_by_id(raw_item["assetId"])
+                    if(mewt_data and mewt_data["resellable"] == True):
                         self.collectable_id_to_name[raw_item["collectibleItemId"]] = raw_item["assetName"]
                         self.id_to_name[raw_item["assetId"]] = raw_item["assetName"]
                         self.collectable_id_to_id[raw_item["collectibleItemId"]] = raw_item["assetId"]
